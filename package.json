@@ -2,6 +2,7 @@
   "name": "turnwise",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@12.16.1",
   "description": "AI treasurer for savings circles, built on PayPal. Agents propose; a deterministic policy gate executes every money move.",
   "license": "MIT",
   "type": "module",

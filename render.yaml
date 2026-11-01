@@ -1,14 +1,15 @@
-# Render blueprint. Use a paid instance for the web service so judges never hit a cold start.
+# Render blueprint. Paid instances so judges never hit a cold start.
 services:
   - type: web
     name: turnwise-web
     runtime: node
     plan: starter
-    buildCommand: corepack enable && pnpm install && pnpm build
-    startCommand: pnpm db:deploy && pnpm start
+    buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm build
+    startCommand: corepack pnpm db:deploy && corepack pnpm start
     envVars:
       - key: DATABASE_URL
         fromDatabase: { name: turnwise-db, property: connectionString }
+      - { key: COREPACK_ENABLE_DOWNLOAD_PROMPT, value: "0" }
       - { key: PAYPAL_ENV, value: sandbox }
       - { key: PAYPAL_CLIENT_ID, sync: false }
       - { key: PAYPAL_CLIENT_SECRET, sync: false }
@@ -23,14 +24,18 @@ services:
     name: turnwise-worker
     runtime: node
     plan: starter
-    buildCommand: corepack enable && pnpm install && pnpm prisma generate
-    startCommand: pnpm worker
+    buildCommand: corepack pnpm install --frozen-lockfile
+    startCommand: corepack pnpm worker
     envVars:
       - key: DATABASE_URL
         fromDatabase: { name: turnwise-db, property: connectionString }
+      - { key: COREPACK_ENABLE_DOWNLOAD_PROMPT, value: "0" }
       - { key: PAYPAL_ENV, value: sandbox }
       - { key: PAYPAL_CLIENT_ID, sync: false }
       - { key: PAYPAL_CLIENT_SECRET, sync: false }
+      - { key: AZURE_OPENAI_RESOURCE_NAME, sync: false }
+      - { key: AZURE_OPENAI_API_KEY, sync: false }
+      - { key: AZURE_OPENAI_DEPLOYMENT, sync: false }
       - { key: DEMO_SECONDS_PER_DAY, value: "0" }
 
 databases:
