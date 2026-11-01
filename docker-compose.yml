@@ -5,7 +5,7 @@ services:
       POSTGRES_USER: turnwise
       POSTGRES_PASSWORD: turnwise
       POSTGRES_DB: turnwise
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     volumes: [db:/var/lib/postgresql/data]
 
   web:
