@@ -1,0 +1,38 @@
+# Render blueprint. Use a paid instance for the web service so judges never hit a cold start.
+services:
+  - type: web
+    name: turnwise-web
+    runtime: node
+    plan: starter
+    buildCommand: corepack enable && pnpm install && pnpm build
+    startCommand: pnpm db:deploy && pnpm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: turnwise-db, property: connectionString }
+      - { key: PAYPAL_ENV, value: sandbox }
+      - { key: PAYPAL_CLIENT_ID, sync: false }
+      - { key: PAYPAL_CLIENT_SECRET, sync: false }
+      - { key: PAYPAL_WEBHOOK_ID, sync: false }
+      - { key: NEXT_PUBLIC_PAYPAL_CLIENT_ID, sync: false }
+      - { key: AZURE_OPENAI_RESOURCE_NAME, sync: false }
+      - { key: AZURE_OPENAI_API_KEY, sync: false }
+      - { key: AZURE_OPENAI_DEPLOYMENT, sync: false }
+      - { key: NEXT_PUBLIC_AG_GRID_LICENSE_KEY, sync: false }
+
+  - type: worker
+    name: turnwise-worker
+    runtime: node
+    plan: starter
+    buildCommand: corepack enable && pnpm install && pnpm prisma generate
+    startCommand: pnpm worker
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: turnwise-db, property: connectionString }
+      - { key: PAYPAL_ENV, value: sandbox }
+      - { key: PAYPAL_CLIENT_ID, sync: false }
+      - { key: PAYPAL_CLIENT_SECRET, sync: false }
+      - { key: DEMO_SECONDS_PER_DAY, value: "0" }
+
+databases:
+  - name: turnwise-db
+    plan: basic-256mb

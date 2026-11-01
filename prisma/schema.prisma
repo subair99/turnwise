@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Circle {
+  id          String    @id @default(cuid())
+  name        String
+  currency    String    @default("USD")
+  createdAt   DateTime  @default(now())
+  charters    Charter[]
+  members     Member[]
+  cycles      Cycle[]
+  ledger      LedgerEntry[]
+  auditLogs   AuditLog[]
+}
+
+model Charter {
+  id                String   @id @default(cuid())
+  circleId          String
+  circle            Circle   @relation(fields: [circleId], references: [id])
+  version           Int
+  hash              String   @unique
+  body              Json     // contribution, cadence, turn mode, deposit on/off, default steps, quorum
+  frozen            Boolean  @default(false)
+  approvals         Json     @default("[]") // memberIds who approved this version
+  createdAt         DateTime @default(now())
+
+  @@unique([circleId, version])
+}
+
+model Member {
+  id            String    @id @default(cuid())
+  circleId      String
+  circle        Circle    @relation(fields: [circleId], references: [id])
+  displayName   String    // fictional names only in demos
+  paypalEmail   String
+  vaultId       String?   // saved PayPal payment method (usage_type MERCHANT)
+  collectedCycle Int?
+  depositCents  Int       @default(0)
+  mandates      Mandate[]
+  bids          Bid[]
+  preauths      PreAuthorization[]
+
+  @@unique([circleId, paypalEmail])
+}
+
+model Mandate {
+  id            String   @id @default(cuid())
+  memberId      String
+  member        Member   @relation(fields: [memberId], references: [id])
+  hash          String   @unique
+  body          Json     // deadline, targetCents, maxDiscountCents, minAcceptCents
+  sourceText    String   // the member's own words (quarantined text is never stored here)
+  revoked       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model Cycle {
+  id            String   @id @default(cuid())
+  circleId      String
+  circle        Circle   @relation(fields: [circleId], references: [id])
+  number        Int
+  dueAt         DateTime
+  state         String   // collecting | auction | settling | closed
+  winnerId      String?
+  discountCents Int?
+  bids          Bid[]
+
+  @@unique([circleId, number])
+}
+
+model Bid {
+  id            String   @id @default(cuid())
+  cycleId       String
+  cycle         Cycle    @relation(fields: [cycleId], references: [id])
+  memberId      String
+  member        Member   @relation(fields: [memberId], references: [id])
+  discountCents Int
+  source        String   // turn-agent | mcp
+  accepted      Boolean
+  gateReason    String?
+  placedAt      DateTime @default(now())
+}
+
+model PreAuthorization {
+  id              String   @id @default(cuid())
+  memberId        String
+  member          Member   @relation(fields: [memberId], references: [id])
+  cycleNumber     Int
+  orderId         String?
+  authorizationId String?
+  amountCents     Int
+  status          String   // pending_approval | authorized | captured | voided | expired | failed
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime?
+}
+
+model LedgerEntry {
+  id             String   @id @default(cuid())
+  circleId       String
+  circle         Circle   @relation(fields: [circleId], references: [id])
+  description    String
+  postings       Json     // [{ account, debit, credit }] — must balance
+  paypalObjectId String?
+  requestId      String?  @unique
+  createdAt      DateTime @default(now())
+}
+
+model PaypalObject {
+  id        String   @id // PayPal's own ID
+  kind      String   // invoice | order | authorization | capture | payout_batch | payout_item | dispute
+  status    String
+  raw       Json
+  updatedAt DateTime @updatedAt
+}
+
+model WebhookEvent {
+  id         String   @id // PayPal event ID — primary key gives de-duplication
+  eventType  String
+  verified   Boolean
+  payload    Json
+  receivedAt DateTime @default(now())
+  processed  Boolean  @default(false)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  circleId     String
+  circle       Circle   @relation(fields: [circleId], references: [id])
+  agent        String   // treasurer | turn-agent | guardian | mcp | system
+  model        String?
+  proposal     Json
+  allowed      Boolean
+  reasons      Json
+  requestId    String?
+  paypalId     String?
+  charterHash  String?
+  createdAt    DateTime @default(now())
+}

@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: turnwise
+      POSTGRES_PASSWORD: turnwise
+      POSTGRES_DB: turnwise
+    ports: ["5432:5432"]
+    volumes: [db:/var/lib/postgresql/data]
+
+  web:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://turnwise:turnwise@db:5432/turnwise
+    command: sh -c "pnpm db:deploy && pnpm db:seed && pnpm start"
+    ports: ["3000:3000"]
+    depends_on: [db]
+
+  worker:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://turnwise:turnwise@db:5432/turnwise
+    command: pnpm worker
+    depends_on: [db, web]
+
+  mcp:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://turnwise:turnwise@db:5432/turnwise
+    command: pnpm mcp
+    ports: ["3001:3001"]
+    depends_on: [db]
+
+volumes:
+  db:
