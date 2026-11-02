@@ -15,9 +15,8 @@ services:
       - { key: PAYPAL_CLIENT_SECRET, sync: false }
       - { key: PAYPAL_WEBHOOK_ID, sync: false }
       - { key: NEXT_PUBLIC_PAYPAL_CLIENT_ID, sync: false }
-      - { key: AZURE_OPENAI_RESOURCE_NAME, sync: false }
-      - { key: AZURE_OPENAI_API_KEY, sync: false }
-      - { key: AZURE_OPENAI_DEPLOYMENT, sync: false }
+      - { key: OPENROUTER_API_KEY, sync: false }
+      - { key: OPENROUTER_MODEL, value: openai/gpt-4.1-mini }
       - { key: NEXT_PUBLIC_AG_GRID_LICENSE_KEY, sync: false }
 
   - type: worker

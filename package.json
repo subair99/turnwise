@@ -26,7 +26,7 @@
     "evals": "tsx evals/report.ts"
   },
   "dependencies": {
-    "@ai-sdk/azure": "^1.3.25",
+    "@ai-sdk/openai": "^1.3.24",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@paypal/agent-toolkit": "^1.11.0",
     "@prisma/client": "^6.19.3",
