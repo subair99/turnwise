@@ -21,9 +21,11 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "sandbox:gate": "tsx scripts/sandbox-gate.ts",
+    "sandbox:gate": "tsx --env-file=.env scripts/sandbox-gate.ts",
     "redteam": "tsx red-team/run.ts",
-    "evals": "tsx evals/report.ts"
+    "evals": "tsx evals/report.ts",
+    "vault:test": "tsx --env-file=.env scripts/vault-test.ts",
+    "money:loop": "tsx --env-file=.env scripts/money-loop.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.24",

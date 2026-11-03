@@ -11,13 +11,25 @@ export interface Order {
 }
 
 export async function createAuthorizeOrder(args: { value: string; customId: string; vaultId?: string; requestId: string }): Promise<Order> {
+  const base = process.env.APP_BASE_URL ?? "https://turnwise-web.onrender.com";
   return paypalFetch<Order>("/v2/checkout/orders", {
     method: "POST",
     requestId: args.requestId,
     body: {
       intent: "AUTHORIZE",
       purchase_units: [{ amount: { currency_code: "USD", value: args.value }, custom_id: args.customId }],
-      ...(args.vaultId ? { payment_source: { paypal: { vault_id: args.vaultId } } } : {}),
+      payment_source: args.vaultId
+        ? { paypal: { vault_id: args.vaultId } }
+        : {
+            paypal: {
+              experience_context: {
+                return_url: `${base}/?paypal=approved`,
+                cancel_url: `${base}/?paypal=cancelled`,
+                user_action: "CONTINUE",
+                shipping_preference: "NO_SHIPPING",
+              },
+            },
+          },
     },
   });
 }

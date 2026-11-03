@@ -10,6 +10,9 @@ interface Base {
 }
 
 export type Proposal =
+  | (Base & { kind: "create_payin"; memberId: string; amount: Cents; returnUrl: string; cancelUrl: string })
+  | (Base & { kind: "capture_payin"; memberId: string; orderId: string })
+  | (Base & { kind: "send_invoice"; memberId: string; amount: Cents })
   | (Base & { kind: "accept_bid"; memberId: string; mandateHash: string; discount: Cents })
   | (Base & { kind: "payout_batch"; items: { memberId: string; amount: Cents }[] })
   | (Base & { kind: "create_preauth"; memberId: string; amount: Cents })
@@ -20,11 +23,12 @@ export type Proposal =
 
 export interface GateContext {
   charter: { hash: string; frozen: boolean; contribution: Cents; memberIds: string[]; depositOn: boolean };
-  cycle: { number: number; state: "collecting" | "auction" | "settling" | "closed"; potCollected: Cents };
+  cycle: { number: number; state: "pending" | "collecting" | "auction" | "settling" | "closed"; potCollected: Cents };
   mandates: Record<string, { hash: string; maxDiscount: Cents; revoked: boolean }>;
   ladder: Record<string, LadderStep>;
   deposits: Record<string, Cents>;
   executedRequestIds: Set<string>;
+  paidThisCycle?: Set<string>;
 }
 
 export interface GateDecision {
@@ -40,6 +44,8 @@ function subjectOf(p: Proposal): string {
     case "capture_preauth":
     case "void_preauth":
       return `${p.memberId}:${p.authorizationId}`;
+    case "capture_payin":
+      return `${p.memberId}:${p.orderId}`;
     default:
       return p.memberId;
   }
@@ -49,6 +55,7 @@ export function evaluate(p: Proposal, ctx: GateContext): GateDecision {
   const reasons: string[] = [];
   const rid = requestId(p.circleId, p.cycle, p.kind, subjectOf(p));
   const isMember = (id: string) => ctx.charter.memberIds.includes(id);
+  const alreadyPaid = (id: string) => ctx.paidThisCycle?.has(id) ?? false;
 
   if (!ctx.charter.frozen) reasons.push("charter not approved and frozen");
   if (p.charterHash !== ctx.charter.hash) reasons.push("charter hash mismatch");
@@ -56,6 +63,17 @@ export function evaluate(p: Proposal, ctx: GateContext): GateDecision {
   if (ctx.executedRequestIds.has(rid)) reasons.push("already executed (idempotency)");
 
   switch (p.kind) {
+    case "create_payin":
+    case "send_invoice":
+      if (ctx.cycle.state !== "collecting") reasons.push("cycle not collecting");
+      if (!isMember(p.memberId)) reasons.push("not a member");
+      if (p.amount !== ctx.charter.contribution) reasons.push("amount must equal one contribution");
+      if (alreadyPaid(p.memberId)) reasons.push("already paid this cycle");
+      break;
+    case "capture_payin":
+      if (!isMember(p.memberId)) reasons.push("not a member");
+      if (alreadyPaid(p.memberId)) reasons.push("already paid this cycle");
+      break;
     case "accept_bid": {
       const m = ctx.mandates[p.memberId];
       if (ctx.cycle.state !== "auction") reasons.push("auction not open");
@@ -79,6 +97,7 @@ export function evaluate(p: Proposal, ctx: GateContext): GateDecision {
     case "create_preauth":
       if (!isMember(p.memberId)) reasons.push("not a member");
       if (p.amount !== ctx.charter.contribution) reasons.push("pre-authorization must equal one contribution");
+      if (alreadyPaid(p.memberId)) reasons.push("already paid this cycle");
       break;
     case "capture_preauth":
       if (!isMember(p.memberId)) reasons.push("not a member");

@@ -1,12 +1,12 @@
-// PayPal webhook endpoint: verify signature -> de-duplicate by event ID -> hand to the ledger.
+// PayPal webhook endpoint: verify signature -> de-duplicate by event ID -> update state and ledger.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { ingestWebhook } from "@/gate/webhook-ingest";
 
 export async function POST(req: Request) {
-  let event: { id: string; event_type: string };
+  let event: { id: string; event_type: string; resource?: Record<string, unknown> };
   try {
-    event = (await req.json()) as { id: string; event_type: string };
+    event = (await req.json()) as typeof event;
   } catch {
     return NextResponse.json({ ok: false, reason: "invalid JSON" }, { status: 400 });
   }
@@ -18,6 +18,6 @@ export async function POST(req: Request) {
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (err) {
     console.error("[webhook] rejected", event.event_type, (err as Error).message);
-    return NextResponse.json({ ok: false, reason: "verification failed" }, { status: 400 });
+    return NextResponse.json({ ok: false, reason: "verification or processing failed" }, { status: 400 });
   }
 }
