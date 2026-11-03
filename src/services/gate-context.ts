@@ -77,6 +77,7 @@ export async function gateFor(db: PrismaClient, circleId: string, cycleNumber: n
     executedRequestIds: new Set(executed.map((e) => e.requestId).filter((x): x is string => Boolean(x))),
     paidThisCycle: new Set(contributions.filter((c) => c.status === "paid" || c.status === "covered").map((c) => c.memberId)),
     collected: new Set(circle.members.filter((m) => m.collectedCycle !== null).map((m) => m.id)),
+    owed: Object.fromEntries(memberIds.map((id) => [id, Math.max(0, -(bal.get(`liability:payout-owed:${id}`) ?? 0))])),
   };
 
   const byId = new Map(circle.members.map((m) => [m.id, m]));

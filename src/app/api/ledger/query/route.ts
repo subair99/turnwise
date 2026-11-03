@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         console.error(`[ledger query] attempt ${attempt} failed validation:`, problems.slice(0, 400));
       }
     }
-    writeFileSync(DEBUG_FILE, JSON.stringify({ question, schemaKeys: Object.keys((gridSchema.properties as object) ?? {}), schema: gridSchema, attempts, ok: Boolean(out) }, null, 2));
+    if (!out) writeFileSync(DEBUG_FILE, JSON.stringify({ question, schemaKeys: Object.keys((gridSchema.properties as object) ?? {}), schema: gridSchema, attempts, ok: Boolean(out) }, null, 2));
     if (!out) {
       return NextResponse.json({ gridState: null, explanation: "I couldn't turn that into a valid view of the ledger. Try naming a column, such as timing or member." }, { status: 422 });
     }

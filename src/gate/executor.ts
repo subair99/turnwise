@@ -130,6 +130,15 @@ async function call(p: Proposal, rid: string, members: MemberDirectory): Promise
       });
       return { payoutBatchId: batch.batch_header?.payout_batch_id, status: batch.batch_header?.batch_status };
     }
+    case "repay_owed": {
+      const batch = await createPayoutBatch({
+        senderBatchId: rid,
+        emailSubject: "Your Turnwise payout",
+        items: [{ receiver: members.email(p.memberId), value: toValue(p.amount), note: "Payout sent again", senderItemId: rid }],
+        requestId: rid,
+      });
+      return { payoutBatchId: batch.batch_header?.payout_batch_id, status: batch.batch_header?.batch_status };
+    }
     case "accept_bid":
     case "apply_deposit":
       return {}; // ledger-only actions

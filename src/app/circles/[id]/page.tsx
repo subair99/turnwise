@@ -1,6 +1,10 @@
 import { db } from "@/lib/db";
 import { circleHome } from "@/services/views";
 import { TurnRing } from "@/components/TurnRing";
+import { Flash } from "@/components/Flash";
+import { SubmitButton } from "@/components/SubmitButton";
+import { owedPayouts } from "@/services/views-6b";
+import { sendPayoutAgain } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +28,27 @@ function sentence(h: Awaited<ReturnType<typeof circleHome>>) {
   }
 }
 
-export default async function CircleHome({ params }: { params: Promise<{ id: string }> }) {
+export default async function CircleHome({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const { id } = await params;
-  const h = await circleHome(db, id);
+  const sp = await searchParams;
+  const [h, owed] = await Promise.all([circleHome(db, id), owedPayouts(db, id)]);
   const waiting = h.members.filter((m) => m.collectedCycle === null).length;
   return (
     <>
+      <Flash msg={sp.msg} err={sp.err} />
+      {owed.map((o) => (
+        <div key={o.id} className="callout bad" style={{ marginBottom: 16 }}>
+          <p><strong>PayPal could not pay {o.name} {usd(o.owedCents)}.</strong> {o.reason ? `PayPal said: ${o.reason}. ` : ""}The money is held for them in the circle.</p>
+          {o.waiting ? (
+            <p className="meta">Sent again. Waiting for PayPal to confirm.</p>
+          ) : (
+            <form action={sendPayoutAgain.bind(null, id, o.id)}>
+              <p className="meta">Once {o.name}&rsquo;s PayPal account can receive payments, send it again. The gate pays no more than is owed.</p>
+              <SubmitButton className="btn warn" pending="Sending through PayPal…">{`Send ${o.name}'s payout again`}</SubmitButton>
+            </form>
+          )}
+        </div>
+      ))}
       <div className="home">
         <div className="ring-wrap">
           <TurnRing

@@ -15,6 +15,7 @@ const RULES: Record<string, string> = {
   payout_batch: "Pay out no more than the collected pot, to members only",
   apply_deposit: "Use a deposit only after the reminder, grace days and cure window",
   refund_deposit: "Return the deposit once the member has finished the circle",
+  repay_owed: "Pay a held payout again, never more than is owed to the member",
   accept_bid: "A bid must be within the member's mandate cap",
 };
 
@@ -288,6 +289,28 @@ export async function ledgerRows(db: PrismaClient, id: string): Promise<LedgerRo
       method: "PayPal Payouts",
       paypalId: e.paypalObjectId ?? "",
       ...auditFields(a, "refund_deposit"),
+    });
+  }
+  for (const e of entries.filter((x) => x.description.startsWith("Payout failed: ") || x.description.startsWith("Payout sent again: "))) {
+    const failed = e.description.startsWith("Payout failed: ");
+    const memberId = e.description.replace(/^Payout (failed|sent again): /, "").split(/[ ,(]/)[0] ?? "";
+    const cash = (e.postings as unknown as Posting[]).filter((p) => p.account === accounts.cash).reduce((s, p) => s + p.debit - p.credit, 0);
+    const batch = batches.find((b) => b.id === e.paypalObjectId);
+    const cycle = Number(/cycle (\d+)/.exec(e.description)?.[1] ?? c.cycles.length);
+    rows.push({
+      id: `${failed ? "payout-failed" : "payout-again"}:${e.id}`,
+      date: e.createdAt.toISOString(),
+      cycle,
+      member: name.get(memberId) ?? memberId,
+      city: city.get(memberId) ?? "",
+      type: failed ? "Payout failed" : "Payout sent again",
+      direction: failed ? "Held" : "Out",
+      amount: Math.abs(cash) / 100,
+      timing: "",
+      status: failed ? `Held for the member: ${/\((.*)\)$/.exec(e.description)?.[1] ?? "PayPal could not pay"}` : batch?.status === "success" ? "Confirmed by PayPal" : batch?.status === "failed" ? "Failed again" : "Waiting for PayPal",
+      method: "PayPal Payouts",
+      paypalId: e.paypalObjectId ?? "",
+      ...auditFields(auditOf(failed ? null : e.paypalObjectId, []), failed ? "payout_batch" : "repay_owed"),
     });
   }
   return rows.sort((x, y) => x.date.localeCompare(y.date));

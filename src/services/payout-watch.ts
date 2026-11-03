@@ -14,7 +14,7 @@ export const payoutOwedAccount = (memberId: string) => `liability:payout-owed:${
 
 export async function trackPayoutBatch(
   db: PrismaClient,
-  b: { id: string; circleId: string; purpose: "settlement" | "refund"; cycleNumber: number | null; items: { memberId: string; amount: number }[] },
+  b: { id: string; circleId: string; purpose: "settlement" | "refund" | "retry"; cycleNumber: number | null; items: { memberId: string; amount: number }[] },
 ) {
   await db.payoutBatch.upsert({
     where: { id: b.id },

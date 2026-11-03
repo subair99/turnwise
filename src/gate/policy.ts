@@ -19,7 +19,8 @@ export type Proposal =
   | (Base & { kind: "capture_preauth"; memberId: string; authorizationId: string; amount: Cents })
   | (Base & { kind: "void_preauth"; memberId: string; authorizationId: string })
   | (Base & { kind: "apply_deposit"; memberId: string; amount: Cents })
-  | (Base & { kind: "refund_deposit"; memberId: string; amount: Cents });
+  | (Base & { kind: "refund_deposit"; memberId: string; amount: Cents })
+  | (Base & { kind: "repay_owed"; memberId: string; amount: Cents; attempt: number });
 
 export interface GateContext {
   charter: { hash: string; frozen: boolean; contribution: Cents; memberIds: string[]; depositOn: boolean };
@@ -30,6 +31,7 @@ export interface GateContext {
   executedRequestIds: Set<string>;
   paidThisCycle?: Set<string>;
   collected?: Set<string>;
+  owed?: Record<string, Cents>; // payouts PayPal could not complete, held for the member
 }
 
 export interface GateDecision {
@@ -47,6 +49,8 @@ function subjectOf(p: Proposal): string {
       return `${p.memberId}:${p.authorizationId}`;
     case "capture_payin":
       return `${p.memberId}:${p.orderId}`;
+    case "repay_owed":
+      return `${p.memberId}:retry-${p.attempt}`;
     default:
       return p.memberId;
   }
@@ -114,6 +118,11 @@ export function evaluate(p: Proposal, ctx: GateContext): GateDecision {
       break;
     case "refund_deposit":
       if (p.amount > (ctx.deposits[p.memberId] ?? 0)) reasons.push("amount exceeds deposit held");
+      break;
+    case "repay_owed":
+      if (!isMember(p.memberId)) reasons.push("not a member");
+      if (!Number.isInteger(p.amount) || p.amount <= 0) reasons.push("invalid amount");
+      if (p.amount > (ctx.owed?.[p.memberId] ?? 0)) reasons.push("more than is owed to the member");
       break;
   }
 

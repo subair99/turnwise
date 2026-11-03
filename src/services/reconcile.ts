@@ -15,7 +15,7 @@ export interface ReconcileRow {
 }
 
 function kindFor(description: string, id: string): PayPalKind {
-  if (/^Settlement|^Deposit refunded|^Payout failed/.test(description)) return "payout_batch";
+  if (/^Settlement|^Deposit refunded|^Payout failed|^Payout sent again/.test(description)) return "payout_batch";
   if (/^INV2-/.test(id)) return "invoice";
   return "capture";
 }

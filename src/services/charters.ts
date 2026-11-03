@@ -59,7 +59,7 @@ export async function requestAmendment(db: PrismaClient, circleId: string, membe
   const { body: newBody, problems } = validateCharter(applyChanges(body, a.changes));
   if (problems.length) return { created: false as const, explanation: `${a.explanation} (Not valid: ${problems.join("; ")})` };
 
-  const versioned = { ...newBody, label: `${body.label ?? circleId} v${charter.version + 1}` };
+  const versioned = { ...newBody, label: `${body.label ?? circleId} v${charter.version + 1}`, request: text, requestedBy: memberId, note: a.explanation };
   const draft = await db.charter.create({
     data: {
       circleId,

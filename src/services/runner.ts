@@ -7,7 +7,8 @@ import { openCycle } from "./cycles";
 import { runCaptures, runDefaultSteps, runPreauthWindow } from "./guardian-jobs";
 import { closeAuction, collectAgentBids } from "./auction";
 import { refundDeposit } from "./settlement";
-import { confirmPayouts } from "./payout-watch";
+import { confirmPayouts, payoutOwedAccount } from "./payout-watch";
+import { loadBalances } from "./ledger-store";
 import { notice } from "./notices";
 
 const DAY = 86_400_000;
@@ -20,6 +21,17 @@ export async function tickCircle(db: PrismaClient, circleId: string, at: Date, l
   const { circle, body } = await loadCircle(db, circleId);
   if (circle.status === "complete") return "complete";
   if (circle.mode === "simulated") return "simulated";
+  if (circle.status === "attention") {
+    await confirmPayouts(db, circleId, log);
+    const bal = await loadBalances(db, circleId);
+    const owed = circle.members.some((m) => (bal.get(payoutOwedAccount(m.id)) ?? 0) !== 0);
+    const pending = await db.payoutBatch.count({ where: { circleId, status: "pending" } });
+    if (owed || pending) return "attention";
+    await db.circle.update({ where: { id: circleId }, data: { status: "complete" } });
+    await notice(db, { circleId, kind: "info", text: "Circle complete. The held payout was paid and confirmed by PayPal." });
+    log("circle complete after a payout retry");
+    return "complete";
+  }
   // Circles from the Stage 2-3 scripts have no default steps or lead days; leave them alone.
   if (!body.defaultSteps || !body.preauthLeadDays) return "legacy";
   at = circleNow(circle, at);
@@ -86,7 +98,7 @@ export async function tickCircle(db: PrismaClient, circleId: string, at: Date, l
 
 export async function tickAll(db: PrismaClient, at: Date, log?: (m: string) => void) {
   const circles = await db.circle.findMany({
-    where: { status: "active", mode: "live" },
+    where: { status: { in: ["active", "attention"] }, mode: "live" },
     select: { id: true, charters: { where: { frozen: true }, select: { id: true }, take: 1 } },
   });
   for (const c of circles) {

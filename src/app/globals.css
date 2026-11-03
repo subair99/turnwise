@@ -107,3 +107,29 @@ table.plain td.num { text-align: right; }
 }
 
 table.plain th.num { text-align: right; }
+
+/* Stage 6b */
+.narrow { max-width: 640px; display: grid; gap: 22px; }
+.as { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ink-muted); font-size: 0.95rem; }
+.as select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); color: var(--indigo); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 16px; display: grid; gap: 10px; }
+.rules { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.stack-form { display: grid; gap: 10px; }
+.stack-form textarea { font: inherit; min-height: 96px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); color: var(--indigo); resize: vertical; }
+.stack-form .btn, .narrow .btn { min-height: 48px; }
+.ok { color: var(--leaf); }
+.bad { color: var(--camwood); }
+.pill { display: inline-block; font-size: 0.8rem; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--line); }
+.pill.ok { border-color: var(--leaf); }
+.pill.bad { border-color: var(--camwood); }
+.meter { height: 10px; background: var(--wash); border-radius: 999px; overflow: hidden; min-width: 120px; }
+.meter > span { display: block; height: 100%; background: var(--indigo); }
+.meter.full > span { background: var(--kola); }
+code.token { display: block; padding: 10px 12px; background: var(--wash); border-radius: var(--radius-s); word-break: break-all; font-size: 0.85rem; }
+.passports { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.passport { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--indigo); border-radius: var(--radius-m); padding: 16px; display: grid; gap: 8px; align-content: start; }
+.passport .record { font-family: var(--font-display), sans-serif; font-size: 1.35rem; font-weight: 700; }
+.passport ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; color: var(--ink-muted); }
+.passport footer { color: var(--ink-muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 8px; }
+.inline-form { display: inline; }
+@media print { .sandbox, .site-head, .tabs, .foot, .no-print { display: none; } .passport { break-inside: avoid; } }

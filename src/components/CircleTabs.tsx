@@ -6,6 +6,10 @@ const TABS = [
   { href: "", label: "Home" },
   { href: "/ledger", label: "Ledger" },
   { href: "/auction", label: "Auction" },
+  { href: "/trust", label: "Trust" },
+  { href: "/passport", label: "Passport" },
+  { href: "/charter", label: "Charter" },
+  { href: "/mandate", label: "My mandate" },
 ];
 
 export function CircleTabs({ id }: { id: string }) {
@@ -15,7 +19,7 @@ export function CircleTabs({ id }: { id: string }) {
       {TABS.map((t) => {
         const href = `/circles/${id}${t.href}`;
         return (
-          <Link key={t.label} href={href} aria-current={path === href ? "page" : undefined}>
+          <Link key={t.label} href={href} aria-current={path === href || (t.href !== "" && path.startsWith(href)) ? "page" : undefined}>
             {t.label}
           </Link>
         );

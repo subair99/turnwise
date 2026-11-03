@@ -29,7 +29,7 @@ export function CircleLedger({ rows }: { rows: LedgerRow[] }) {
       { field: "city", headerName: "City", enableRowGroup: true, hide: true },
       { field: "type", headerName: "Type", enableRowGroup: true, enablePivot: true },
       { field: "direction", headerName: "Money", enableRowGroup: true, width: 110 },
-      { field: "amount", headerName: "Amount", type: "rightAligned", valueFormatter: (p) => usd(p.value), enableValue: true, aggFunc: "sum", allowedAggFuncs: ["sum", "count", "avg", "min", "max"], filter: "agNumberColumnFilter", width: 130 },
+      { field: "amount", headerName: "Amount", type: "rightAligned", valueFormatter: (p) => usd(p.value), enableValue: true, defaultAggFunc: "sum", allowedAggFuncs: ["sum", "count", "avg", "min", "max"], filter: "agNumberColumnFilter", width: 130 },
       { field: "timing", headerName: "Timing", enableRowGroup: true, cellStyle: (p) => (p.value === "Late" || String(p.value).startsWith("Missed") ? { color: "#a63d25", fontWeight: 700 } : null) },
       { field: "status", headerName: "Status", cellStyle: (p) => (String(p.value).startsWith("Failed") ? { color: "#a63d25", fontWeight: 700 } : String(p.value).startsWith("Confirmed") ? ({ color: "#2e6b47" } as CellStyle) : null) },
       { field: "method", headerName: "Method", enableRowGroup: true, hide: true },
