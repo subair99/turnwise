@@ -1,25 +1,30 @@
 import { generateObject } from "ai";
-import { readFileSync } from "node:fs";
 import { model } from "../lib/model";
 import { BidProposal, MandateDraft } from "./schemas";
+import { TURN_AGENT } from "./prompts";
 import { screen } from "./quarantine";
 
-const SYSTEM = readFileSync(new URL("./prompts/turn-agent.md", import.meta.url), "utf8");
-
-export async function extractMandate(memberText: string) {
+export async function extractMandate(memberText: string, today = new Date()) {
   const q = screen(memberText);
   if (q.quarantined) return { quarantined: true as const, reasons: q.reasons };
-  const { object } = await generateObject({ model, schema: MandateDraft, system: SYSTEM, prompt: memberText });
+  const { object } = await generateObject({
+    model,
+    schema: MandateDraft,
+    system: TURN_AGENT,
+    prompt: `Today is ${today.toISOString().slice(0, 10)}.\nMember says: ${memberText}`,
+  });
   return { quarantined: false as const, mandate: object };
 }
 
-// The model proposes a bid; the gate decides whether it counts.
-export async function proposeBid(mandate: unknown, auction: { cycle: number; potCents: number; cyclesLeft: number }) {
+export async function proposeBid(
+  mandate: unknown,
+  auction: { cycle: number; potCents: number; cyclesLeft: number; today: string },
+) {
   const { object } = await generateObject({
     model,
     schema: BidProposal,
-    system: SYSTEM,
-    prompt: `Mandate:\n${JSON.stringify(mandate)}\n\nAuction:\n${JSON.stringify(auction)}\n\nPropose a sealed bid within the mandate.`,
+    system: TURN_AGENT,
+    prompt: `Mandate:\n${JSON.stringify(mandate)}\n\nAuction:\n${JSON.stringify(auction)}\n\nPropose one sealed bid (discount in cents) within the mandate.`,
   });
   return object;
 }

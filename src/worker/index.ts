@@ -1,25 +1,23 @@
-// Background worker: runs every job on each tick. Jobs are idempotent (pure step functions + request IDs).
-import { now, isAccelerated } from "../domain/clock";
-import { runPreauthJob } from "./jobs/preauth";
-import { runCaptureJob } from "./jobs/capture";
-import { runDefaultStepsJob } from "./jobs/default-steps";
+// Background worker: moves every approved circle forward on each tick. All steps are idempotent.
+import { db } from "../lib/db";
+import { isAccelerated, now } from "../domain/clock";
+import { tickAll } from "../services/runner";
 import { runReconcileJob } from "./jobs/reconcile";
 
 const TICK_MS = isAccelerated() ? 1_000 : 60_000;
+let busy = false;
 
 async function tick() {
-  const t = now();
-  for (const [name, job] of [
-    ["preauth", runPreauthJob],
-    ["capture", runCaptureJob],
-    ["default-steps", runDefaultStepsJob],
-    ["reconcile", runReconcileJob],
-  ] as const) {
-    try {
-      await job(t);
-    } catch (err) {
-      console.error(`[worker] ${name} failed`, err);
-    }
+  if (busy) return; // never overlap ticks
+  busy = true;
+  try {
+    const t = now();
+    await tickAll(db, t);
+    await runReconcileJob(t);
+  } catch (err) {
+    console.error("[worker] tick failed", err);
+  } finally {
+    busy = false;
   }
 }
 

@@ -1,0 +1,82 @@
+$ tsx --env-file=.env scripts/demo-circle.ts
+Organizer: "2 of us, $5 a month, auction mode, 3 grace days, 48-hour cure window, deposits on, authorize payments 5 days before each due date."
+Treasurer's charter: {"contributionCents":500,"cadence":"monthly","members":2,"turnMode":"auction","depositOn":true,"defaultSteps":{"graceDays":3,"cureHours":48},"preauthLeadDays":5,"voteQuorum":0.5}
+Treasurer asks: I assumed the default vote quorum of 0.5.
+  Ada's mandate: max discount $2.00
+  Bola's mandate: max discount $0.00
+Treasurer on the amendment: Proposed change: increase the member count from 2 to 3. This is not effective unless every member approves the amendment. It is unclear who the cousin is and when their membership and contribution obligations would begin; those details should be clarified before approval.
+
+Running on the demo clock (0.7s per circle day — demo time, accelerated)…
+  [demo 2026-12-02] cycle 1 open for contributions (due 2027-01-01)
+  [demo 2027-01-05] Ada: authorized 04244186XW976924L
+  [demo 2027-01-09] Bola: authorized 0RC68890PS0291628
+  [demo 2027-01-14] Ada: captured 7YM82214XL952781T
+  [demo 2027-01-18] Bola: captured 3XD72627XA5832303
+  [demo 2027-01-18] cycle 1: pot complete, auction open
+  [demo 2027-01-18] outside assistant bids $9.00 for Ada: REJECTED (over mandate cap)
+  [demo 2027-02-03] cycle 1: Ada wins, discount 0, batch APNWYX8TG6C2W
+  [demo 2027-02-04] cycle 2 open for contributions (due 2027-01-31)
+  [demo 2027-02-05] Ada: simulated miss — no authorization
+  [demo 2027-02-09] Bola: authorized 0CG15521XX733825U
+  [demo 2027-02-12] Bola: captured 76G98685AU119115N
+  [demo 2027-02-18] Ada: send_reminder
+  [demo 2027-02-22] Ada: open_cure_window
+  [demo 2027-02-27] Ada: deposit applied 500 cents
+  [demo 2027-02-27] cycle 2: pot complete, auction open
+  [demo 2027-02-27] outside assistant bids $9.00 for Bola: REJECTED (over mandate cap)
+  [demo 2027-03-08] cycle 2: Bola wins, discount 0, batch YCUZXBUFJZZYA
+  [demo 2027-03-08] circle complete
+
+Auction Board:
+┌─────────┬───────┬────────┬──────────────┬──────────┬────────────┬────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ cycle │ member │ source       │ discount │ gate       │ reason             │ agent                                                                                       │
+├─────────┼───────┼────────┼──────────────┼──────────┼────────────┼────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 1     │ 'Ada'  │ 'mcp'        │ '$9.00'  │ 'rejected' │ 'over mandate cap' │ 'Outside assistant bid'                                                                     │
+│ 1       │ 1     │ 'Ada'  │ 'turn-agent' │ '$0.00'  │ 'passed'   │ ''                 │ 'I’m bidding with no discount because you gave no deadline or minimum payout requirement.'  │
+│ 2       │ 1     │ 'Bola' │ 'turn-agent' │ '$0.00'  │ 'passed'   │ ''                 │ 'I bid 0 cents because you can wait for a later turn and will not pay to go early.'         │
+│ 3       │ 2     │ 'Bola' │ 'mcp'        │ '$9.00'  │ 'rejected' │ 'over mandate cap' │ 'Outside assistant bid'                                                                     │
+│ 4       │ 2     │ 'Bola' │ 'turn-agent' │ '$0.00'  │ 'passed'   │ ''                 │ 'I bid 0 cents because you can wait for a later turn and your maximum discount is 0 cents.' │
+└─────────┴───────┴────────┴──────────────┴──────────┴────────────┴────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Notices to members:
+┌─────────┬───────┬───────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ cycle │ kind              │ text                                                                                                             │
+├─────────┼───────┼───────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 1     │ 'payout'          │ 'Ada collects cycle 1 with a 0.00 discount; payout batch APNWYX8TG6C2W.'                                         │
+│ 1       │ 2     │ 'info'            │ 'Ada: payment not authorized (simulated miss for the demo).'                                                     │
+│ 2       │ 2     │ 'reminder'        │ 'Ada, please make your Cycle 2 contribution within the 3-day grace period. If it remains unpaid after that, you' │
+│ 3       │ 2     │ 'cure_window'     │ 'Ada, your 48-hour cure window for cycle 2 is now open. Please complete the needed cure within the next 48 hour' │
+│ 4       │ 2     │ 'deposit_applied' │ 'Ada’s $5 deposit was applied to cycle 2, and nothing remains owed for that cycle. There’s no further payment d' │
+│ 5       │ 2     │ 'payout'          │ 'Bola collects cycle 2 with a 0.00 discount; payout batch YCUZXBUFJZZYA.'                                        │
+│ 6       │ ''    │ 'info'            │ 'Circle complete. Deposits returned to members who finished.'                                                    │
+└─────────┴───────┴───────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Ledger balances:
+┌─────────┬───────────────────────────────────────────────┬─────────┐
+│ (index) │ account                                       │ balance │
+├─────────┼───────────────────────────────────────────────┼─────────┤
+│ 0       │ 'cash:circle'                                 │ '$0.00' │
+│ 1       │ 'pot:cycle-1'                                 │ '$0.00' │
+│ 2       │ 'liability:deposit:cmw0o2omy0004ugf1k1ec0u5f' │ '$0.00' │
+│ 3       │ 'pot:cycle-2'                                 │ '$0.00' │
+└─────────┴───────────────────────────────────────────────┴─────────┘
+
+Results:
+┌─────────┬─────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ check                                                   │ result                                                                                                        │
+├─────────┼─────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'charter drafted and valid'                             │ 'PASS'                                                                                                        │
+│ 1       │ 'charter frozen after every approval'                   │ 'PASS — sha256:db443822f0f4318'                                                                               │
+│ 2       │ 'vague mandate sent back as a question'                 │ "PASS — What's the most you'd pay to collect earlier? Give an amount like $2, or say you won't pay anything." │
+│ 3       │ 'mandate saved for Ada'                                 │ 'PASS'                                                                                                        │
+│ 4       │ 'mandate saved for Bola'                                │ 'PASS'                                                                                                        │
+│ 5       │ 'injection quarantined'                                 │ 'PASS — instruction override, direct payout demand'                                                           │
+│ 6       │ 'amendment not applied without every approval'          │ 'PASS — draft created, awaiting approvals'                                                                    │
+│ 7       │ 'cycle 1: over-cap outside bid rejected'                │ 'PASS — over mandate cap'                                                                                     │
+│ 8       │ 'cycle 2: over-cap outside bid rejected'                │ 'PASS — over mandate cap'                                                                                     │
+│ 9       │ 'circle completed unattended'                           │ 'PASS — complete'                                                                                             │
+│ 10      │ 'missed payment covered by deposit after default steps' │ 'PASS — covered'                                                                                              │
+│ 11      │ 'all pots cleared'                                      │ 'PASS'                                                                                                        │
+│ 12      │ 'circle cash back to $0.00'                             │ 'PASS — $0.00'                                                                                                │
+│ 13      │ 'ledger sums to zero'                                   │ 'PASS'                                                                                                        │
+└─────────┴─────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────┘

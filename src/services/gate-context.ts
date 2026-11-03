@@ -3,16 +3,11 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import type { GateContext, Proposal } from "@/gate/policy";
 import { execute, type AuditSink, type ExecResult, type MemberDirectory } from "@/gate/executor";
 import { accounts } from "@/domain/ledger";
+import type { CharterBody } from "@/domain/charter";
+import type { LadderStep } from "@/domain/default-ladder";
 import { loadBalances } from "./ledger-store";
 
-export interface CharterBody {
-  contributionCents: number;
-  members: number;
-  depositOn: boolean;
-  turnMode?: string;
-  defaultSteps?: { graceDays: number; cureHours: number };
-  preauthLeadDays?: number;
-}
+export type { CharterBody };
 
 export async function loadCircle(db: PrismaClient, circleId: string) {
   const circle = await db.circle.findUniqueOrThrow({
@@ -48,6 +43,13 @@ export function auditSink(db: PrismaClient, circleId: string, charterHash: strin
   };
 }
 
+export async function latestMandates(db: PrismaClient, memberIds: string[]) {
+  const rows = await db.mandate.findMany({ where: { memberId: { in: memberIds } }, orderBy: { createdAt: "desc" } });
+  const out = new Map<string, (typeof rows)[number]>();
+  for (const m of rows) if (!out.has(m.memberId)) out.set(m.memberId, m);
+  return out;
+}
+
 export async function gateFor(db: PrismaClient, circleId: string, cycleNumber: number, agent = "system", model?: string) {
   const { circle, charter, body } = await loadCircle(db, circleId);
   const cycle = circle.cycles.find((c) => c.number === cycleNumber);
@@ -58,24 +60,23 @@ export async function gateFor(db: PrismaClient, circleId: string, cycleNumber: n
   const potCollected = Math.max(0, -(bal.get(accounts.pot(cycleNumber)) ?? 0));
 
   const mandates: GateContext["mandates"] = {};
-  const mandateRows = await db.mandate.findMany({ where: { memberId: { in: memberIds } }, orderBy: { createdAt: "desc" } });
-  for (const m of mandateRows) {
-    if (mandates[m.memberId]) continue; // newest first
+  for (const [memberId, m] of await latestMandates(db, memberIds)) {
     const b = m.body as { maxDiscountCents?: number };
-    mandates[m.memberId] = { hash: m.hash, maxDiscount: b.maxDiscountCents ?? 0, revoked: m.revoked };
+    mandates[memberId] = { hash: m.hash, maxDiscount: b.maxDiscountCents ?? 0, revoked: m.revoked };
   }
 
-  const paid = await db.contribution.findMany({ where: { circleId, cycleNumber, status: "paid" }, select: { memberId: true } });
+  const contributions = await db.contribution.findMany({ where: { circleId, cycleNumber } });
   const executed = await db.auditLog.findMany({ where: { circleId, allowed: true, requestId: { not: null } }, select: { requestId: true } });
 
   const ctx: GateContext = {
     charter: { hash: charter.hash, frozen: charter.frozen, contribution: body.contributionCents, memberIds, depositOn: body.depositOn },
     cycle: { number: cycle.number, state: cycle.state as GateContext["cycle"]["state"], potCollected },
     mandates,
-    ladder: {}, // filled by the default-steps job (Stage 4)
+    ladder: Object.fromEntries(contributions.map((c) => [c.memberId, c.ladderStep as LadderStep])),
     deposits: Object.fromEntries(circle.members.map((m) => [m.id, m.depositCents])),
     executedRequestIds: new Set(executed.map((e) => e.requestId).filter((x): x is string => Boolean(x))),
-    paidThisCycle: new Set(paid.map((p) => p.memberId)),
+    paidThisCycle: new Set(contributions.filter((c) => c.status === "paid" || c.status === "covered").map((c) => c.memberId)),
+    collected: new Set(circle.members.filter((m) => m.collectedCycle !== null).map((m) => m.id)),
   };
 
   const byId = new Map(circle.members.map((m) => [m.id, m]));

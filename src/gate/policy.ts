@@ -29,6 +29,7 @@ export interface GateContext {
   deposits: Record<string, Cents>;
   executedRequestIds: Set<string>;
   paidThisCycle?: Set<string>;
+  collected?: Set<string>;
 }
 
 export interface GateDecision {
@@ -77,6 +78,7 @@ export function evaluate(p: Proposal, ctx: GateContext): GateDecision {
     case "accept_bid": {
       const m = ctx.mandates[p.memberId];
       if (ctx.cycle.state !== "auction") reasons.push("auction not open");
+      if (ctx.collected?.has(p.memberId)) reasons.push("member has already collected");
       if (!isMember(p.memberId)) reasons.push("not a member");
       if (!m) reasons.push("no mandate");
       else {

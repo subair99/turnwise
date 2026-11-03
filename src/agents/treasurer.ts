@@ -1,15 +1,13 @@
 import { generateObject } from "ai";
-import { readFileSync } from "node:fs";
 import { model } from "../lib/model";
 import { AmendmentDraft, CharterDraft } from "./schemas";
+import { TREASURER } from "./prompts";
 import { screen } from "./quarantine";
-
-const SYSTEM = readFileSync(new URL("./prompts/treasurer.md", import.meta.url), "utf8");
 
 export async function draftCharter(organizerText: string) {
   const q = screen(organizerText);
   if (q.quarantined) return { quarantined: true as const, reasons: q.reasons };
-  const { object } = await generateObject({ model, schema: CharterDraft, system: SYSTEM, prompt: organizerText });
+  const { object } = await generateObject({ model, schema: CharterDraft, system: TREASURER, prompt: organizerText });
   return { quarantined: false as const, draft: object };
 }
 
@@ -19,8 +17,8 @@ export async function draftAmendment(charter: unknown, request: string) {
   const { object } = await generateObject({
     model,
     schema: AmendmentDraft,
-    system: SYSTEM,
-    prompt: `Current charter (approved, frozen):\n${JSON.stringify(charter)}\n\nMember request:\n${request}`,
+    system: TREASURER,
+    prompt: `Approved charter (frozen):\n${JSON.stringify(charter)}\n\nMember request:\n${request}\n\nWhich rules would change, and to what?`,
   });
   return { quarantined: false as const, amendment: object };
 }

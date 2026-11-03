@@ -11,12 +11,14 @@ model Circle {
   id          String    @id @default(cuid())
   name        String
   currency    String    @default("USD")
+  status      String    @default("active") // active | complete
   createdAt   DateTime  @default(now())
   charters    Charter[]
   members     Member[]
   cycles      Cycle[]
   ledger      LedgerEntry[]
   auditLogs   AuditLog[]
+  notices     Notice[]
 }
 
 model Charter {
@@ -42,6 +44,7 @@ model Member {
   vaultId        String?   // saved PayPal wallet (usage_type MERCHANT)
   collectedCycle Int?
   depositCents   Int       @default(0)
+  simulateMissCycle Int?   // demo only: skip this member's pre-authorization in this cycle
   mandates       Mandate[]
   bids           Bid[]
   preauths       PreAuthorization[]
@@ -87,7 +90,8 @@ model Contribution {
   invoiceId   String?   @unique
   captureId   String?   @unique
   approveUrl  String?
-  status      String    // pending | preauthorized | paid | failed
+  status      String    // due | pending | preauthorized | paid | covered | shortfall | failed
+  ladderStep  String    @default("current") // current | reminded | cure | deposit_due | resolved
   paidAt      DateTime?
   createdAt   DateTime  @default(now())
 
@@ -104,6 +108,7 @@ model Bid {
   source        String   // turn-agent | mcp
   accepted      Boolean
   gateReason    String?
+  explanation   String?
   placedAt      DateTime @default(now())
 }
 
@@ -163,4 +168,15 @@ model AuditLog {
   paypalId     String?
   charterHash  String?
   createdAt    DateTime @default(now())
+}
+
+model Notice {
+  id          String   @id @default(cuid())
+  circleId    String
+  circle      Circle   @relation(fields: [circleId], references: [id])
+  memberId    String?
+  cycleNumber Int?
+  kind        String   // reminder | cure_window | deposit_applied | vote | auction | payout | info | quarantine
+  text        String
+  createdAt   DateTime @default(now())
 }
