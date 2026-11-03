@@ -13,7 +13,7 @@ const TABS = [
 ];
 
 export function CircleTabs({ id }: { id: string }) {
-  const path = usePathname();
+  const path = usePathname() ?? "";
   return (
     <nav className="tabs" aria-label="Circle">
       {TABS.map((t) => {

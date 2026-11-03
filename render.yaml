@@ -18,6 +18,10 @@ services:
       - { key: OPENROUTER_API_KEY, sync: false }
       - { key: OPENROUTER_MODEL, value: openai/gpt-4.1-mini }
       - { key: NEXT_PUBLIC_AG_GRID_LICENSE_KEY, sync: false }
+      - { key: MCP_TOKEN_SECRET, sync: false }
+      - { key: SANDBOX_MEMBER_EMAILS, sync: false }
+      - { key: SANDBOX_VAULTS, sync: false }
+      - { key: APP_BASE_URL, sync: false }
 
   - type: worker
     name: turnwise-worker
@@ -32,10 +36,11 @@ services:
       - { key: PAYPAL_ENV, value: sandbox }
       - { key: PAYPAL_CLIENT_ID, sync: false }
       - { key: PAYPAL_CLIENT_SECRET, sync: false }
-      - { key: AZURE_OPENAI_RESOURCE_NAME, sync: false }
-      - { key: AZURE_OPENAI_API_KEY, sync: false }
-      - { key: AZURE_OPENAI_DEPLOYMENT, sync: false }
       - { key: DEMO_SECONDS_PER_DAY, value: "0" }
+      - { key: OPENROUTER_API_KEY, sync: false }
+      - { key: OPENROUTER_MODEL, sync: false }
+      - { key: APP_BASE_URL, sync: false }
+      - { key: WORKER_TICK_MS, value: "2000" }
 
 databases:
   - name: turnwise-db

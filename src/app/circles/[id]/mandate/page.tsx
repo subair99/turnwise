@@ -18,7 +18,7 @@ export default async function MandatePage({ params, searchParams }: { params: Pr
   const v = await mandateView(db, id, me.id);
   if (!v) return <p className="meta">Member not found.</p>;
   const back = `/circles/${id}/mandate?as=${me.id}`;
-  const mcpUrl = process.env.MCP_PUBLIC_URL ?? "http://localhost:3001/mcp";
+  const mcpUrl = process.env.MCP_PUBLIC_URL ?? `${process.env.APP_BASE_URL ?? "http://localhost:3000"}/api/mcp`;
   return (
     <div className="narrow">
       <ActingAs members={members} current={me.id} path={`/circles/${id}/mandate`} />

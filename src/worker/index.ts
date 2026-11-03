@@ -4,7 +4,8 @@ import { isAccelerated, now } from "../domain/clock";
 import { tickAll } from "../services/runner";
 import { runReconcileJob } from "./jobs/reconcile";
 
-const TICK_MS = isAccelerated() ? 1_000 : 60_000;
+// Every 2 s by default: live demo circles keep their own clock (one circle day can pass in under a second).
+const TICK_MS = Number(process.env.WORKER_TICK_MS ?? (isAccelerated() ? 1_000 : 2_000));
 let busy = false;
 
 async function tick() {
