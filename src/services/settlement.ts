@@ -5,6 +5,7 @@ import { depositRequired } from "@/domain/deposits";
 import { depositRefundEntry, settlementEntry } from "@/domain/ledger";
 import { gateFor } from "./gate-context";
 import { postEntry } from "./ledger-store";
+import { trackPayoutBatch } from "./payout-watch";
 
 export async function setCycleState(db: PrismaClient, circleId: string, number: number, state: string) {
   await db.cycle.update({ where: { circleId_number: { circleId, number } }, data: { state } });
@@ -43,6 +44,7 @@ export async function settleCycle(
   }
 
   await postEntry(db, circleId, { ...settlementEntry(cycleNumber, s, res.extracted.payoutBatchId), requestId: `settle:${circleId}:${cycleNumber}` });
+  if (res.extracted.payoutBatchId) await trackPayoutBatch(db, { id: res.extracted.payoutBatchId, circleId, purpose: "settlement", cycleNumber, items });
   await db.member.update({ where: { id: winnerId }, data: { collectedCycle: cycleNumber, depositCents: { increment: s.deposit } } });
   await db.cycle.update({
     where: { circleId_number: { circleId, number: cycleNumber } },
@@ -64,6 +66,9 @@ export async function refundDeposit(db: PrismaClient, circleId: string, memberId
     ...depositRefundEntry(memberId, member.depositCents, res.extracted.payoutBatchId),
     requestId: `refund:${circleId}:${memberId}`,
   });
+  if (res.extracted.payoutBatchId) {
+    await trackPayoutBatch(db, { id: res.extracted.payoutBatchId, circleId, purpose: "refund", cycleNumber: null, items: [{ memberId, amount: member.depositCents }] });
+  }
   await db.member.update({ where: { id: memberId }, data: { depositCents: 0 } });
   return { refunded: true, payoutBatchId: res.extracted.payoutBatchId };
 }

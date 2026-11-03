@@ -19,6 +19,7 @@ model Circle {
   ledger      LedgerEntry[]
   auditLogs   AuditLog[]
   notices     Notice[]
+  payoutBatches PayoutBatch[]
 }
 
 model Charter {
@@ -179,4 +180,17 @@ model Notice {
   kind        String   // reminder | cure_window | deposit_applied | vote | auction | payout | info | quarantine
   text        String
   createdAt   DateTime @default(now())
+}
+
+model PayoutBatch {
+  id          String    @id // PayPal payout_batch_id
+  circleId    String
+  circle      Circle    @relation(fields: [circleId], references: [id])
+  purpose     String    // settlement | refund
+  cycleNumber Int?
+  items       Json      // [{ memberId, amount }] in the order sent to PayPal
+  status      String    @default("pending") // pending | success | partial | failed
+  failures    Json      @default("[]")
+  checkedAt   DateTime?
+  createdAt   DateTime  @default(now())
 }

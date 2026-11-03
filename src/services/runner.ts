@@ -1,14 +1,15 @@
 // Moves each circle forward: pending -> collecting -> auction -> closed; refunds deposits at the end.
-// Called by the worker on every tick (real time, or demo time when DEMO_SECONDS_PER_DAY is set).
+// A circle completes only when PayPal has confirmed every payout. Called by the worker on every tick.
 import type { PrismaClient } from "@prisma/client";
 import { loadCircle } from "./gate-context";
 import { openCycle } from "./cycles";
 import { runCaptures, runDefaultSteps, runPreauthWindow } from "./guardian-jobs";
 import { closeAuction, collectAgentBids } from "./auction";
 import { refundDeposit, setCycleState } from "./settlement";
+import { confirmPayouts } from "./payout-watch";
 import { notice } from "./notices";
 
-export type TickResult = "complete" | "opened" | "collecting" | "waiting" | "auction" | "settled" | string;
+export type TickResult = "complete" | "opened" | "collecting" | "waiting" | "auction" | "settled" | "payouts_pending" | "payout_failed" | string;
 
 export async function tickCircle(db: PrismaClient, circleId: string, at: Date, log: (m: string) => void = (m) => console.log(`[runner] ${m}`)): Promise<TickResult> {
   const { circle, body } = await loadCircle(db, circleId);
@@ -16,17 +17,28 @@ export async function tickCircle(db: PrismaClient, circleId: string, at: Date, l
   // Circles from the Stage 2-3 scripts have no default steps or lead days; leave them alone.
   if (!body.defaultSteps || !body.preauthLeadDays) return "legacy";
 
+  const payouts = await confirmPayouts(db, circleId, log);
+
   const open = circle.cycles.find((c) => c.state !== "closed");
   if (!open) {
     for (const m of circle.members.filter((x) => x.depositCents > 0)) {
       const r = await refundDeposit(db, circleId, m.id);
       log(`deposit refund ${m.displayName}: ${r.refunded ? r.payoutBatchId : r.reasons?.join("; ")}`);
     }
+    const final = await confirmPayouts(db, circleId, log);
+    if (final.failed > 0) {
+      await db.circle.update({ where: { id: circleId }, data: { status: "attention" } });
+      await notice(db, { circleId, kind: "info", text: "Every cycle has settled, but PayPal could not complete one or more payouts. The money is held for those members until it can be paid." });
+      log("circle needs attention: a payout failed");
+      return "payout_failed";
+    }
+    if (final.pending > 0) return "payouts_pending";
     await db.circle.update({ where: { id: circleId }, data: { status: "complete" } });
-    await notice(db, { circleId, kind: "info", text: "Circle complete. Deposits returned to members who finished." });
-    log("circle complete");
+    await notice(db, { circleId, kind: "info", text: "Circle complete. Every payout and deposit refund was confirmed by PayPal." });
+    log("circle complete: every payout confirmed by PayPal");
     return "complete";
   }
+  void payouts;
 
   switch (open.state) {
     case "pending":

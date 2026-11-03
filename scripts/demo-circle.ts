@@ -95,7 +95,7 @@ const deadline = Date.now() + 10 * 60_000;
 let state = "";
 while (Date.now() < deadline) {
   state = await tickCircle(db, circle.id, now(), log);
-  if (state === "complete" || state === "waiting") break;
+  if (state === "complete" || state === "waiting" || state === "payout_failed") break;
   if (state === "auction") {
     const open = await db.cycle.findFirstOrThrow({ where: { circleId: circle.id, state: "auction" } });
     if (!injectedBidCycles.has(open.number)) {
@@ -112,7 +112,15 @@ while (Date.now() < deadline) {
 }
 check("circle completed unattended", state === "complete", state);
 
-// 6. Results
+// 6. PayPal confirms every payout; the ledger matches PayPal
+const { reconcileCircle } = await import("../src/services/reconcile");
+const batches = await db.payoutBatch.findMany({ where: { circleId: circle.id } });
+check("every payout confirmed by PayPal", batches.length > 0 && batches.every((b) => b.status === "success"), batches.map((b) => `${b.purpose}${b.cycleNumber ?? ""}:${b.status}`).join(", "));
+for (const b of batches.filter((x) => x.status !== "success")) console.log(`  payout ${b.id} ${b.status}: ${JSON.stringify(b.failures)}`);
+const rec = await reconcileCircle(db, circle.id);
+check("ledger matches PayPal (reconciliation)", rec.driftCents === 0 && rec.unverified === 0, `drift ${formatMoney(rec.driftCents)} across ${rec.checked} PayPal objects`);
+
+// 7. Results
 const bids = await db.bid.findMany({ where: { cycle: { circleId: circle.id } }, include: { member: true, cycle: true }, orderBy: { placedAt: "asc" } });
 console.log("\nAuction Board:");
 console.table(bids.map((b) => ({ cycle: b.cycle.number, member: b.member.displayName, source: b.source, discount: formatMoney(b.discountCents), gate: b.accepted ? "passed" : "rejected", reason: b.gateReason ?? "", agent: b.explanation ?? "" })));
