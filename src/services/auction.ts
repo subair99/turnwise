@@ -103,7 +103,7 @@ export async function closeAuction(db: PrismaClient, circleId: string, cycleNumb
       cycleNumber,
       memberId: winnerId,
       kind: "payout",
-      text: `${name} collects cycle ${cycleNumber} with a ${(discount / 100).toFixed(2)} discount; payout batch ${result.payoutBatchId}.`,
+      text: `${name} collects cycle ${cycleNumber}: $${(result.settlement.winnerPayout / 100).toFixed(2)}${result.settlement.deposit ? `, with $${(result.settlement.deposit / 100).toFixed(2)} held as a deposit` : ""}${discount ? `. Their $${(discount / 100).toFixed(2)} discount was shared with everyone else` : ""}. PayPal payout ${result.payoutBatchId ?? ""}.`,
     });
   }
   return { winnerId, discount, result };

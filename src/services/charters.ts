@@ -15,20 +15,23 @@ export async function charterFromText(text: string, members: number) {
 
 export async function createCircle(
   db: PrismaClient,
-  args: { name: string; body: CharterBody; members: { displayName: string; email: string; vaultId?: string | null }[] },
+  args: { name: string; body: CharterBody; members: { displayName: string; email: string; vaultId?: string | null; city?: string }[] },
+  opts: { mode?: "live" | "simulated"; clock?: { secondsPerDay: number; startedAt: Date } } = {},
 ) {
   const day = 86_400_000;
   const cadenceDays = args.body.cadence === "weekly" ? 7 : 30;
-  const circle = await db.circle.create({ data: { name: args.name } });
+  const circle = await db.circle.create({
+    data: { name: args.name, mode: opts.mode ?? "live", secondsPerDay: opts.clock?.secondsPerDay ?? null, clockStartedAt: opts.clock?.startedAt ?? null },
+  });
   const body = { ...args.body, members: args.members.length, label: `${args.name} ${new Date().toISOString()}` };
   const charter = await db.charter.create({
     data: { circleId: circle.id, version: 1, hash: hashObject(body), body: body as unknown as Prisma.InputJsonValue, frozen: false, approvals: [] },
   });
   const members = [];
   for (const m of args.members) {
-    members.push(await db.member.create({ data: { circleId: circle.id, displayName: m.displayName, paypalEmail: m.email, vaultId: m.vaultId ?? null } }));
+    members.push(await db.member.create({ data: { circleId: circle.id, displayName: m.displayName, paypalEmail: m.email, vaultId: m.vaultId ?? null, city: m.city ?? null } }));
   }
-  const start = now().getTime();
+  const start = (opts.clock?.startedAt ?? now()).getTime();
   for (let k = 1; k <= args.members.length; k++) {
     await db.cycle.create({ data: { circleId: circle.id, number: k, dueAt: new Date(start + k * cadenceDays * day), state: "pending" } });
   }

@@ -23,3 +23,11 @@ export function now(): Date {
 export function preauthDueAt(dueAt: Date, leadDays: number): Date {
   return new Date(dueAt.getTime() - leadDays * DAY);
 }
+
+// Per-circle demo clock, shared by every process (web app, worker, scripts): circle time runs
+// `secondsPerDay` real seconds per circle day from `clockStartedAt`. Circles without one use `fallback`.
+export function circleNow(c: { secondsPerDay: number | null; clockStartedAt: Date | null }, fallback: Date = now()): Date {
+  if (!c.secondsPerDay || !c.clockStartedAt) return fallback;
+  const start = c.clockStartedAt.getTime();
+  return new Date(start + ((Date.now() - start) / (c.secondsPerDay * 1000)) * 24 * 3600 * 1000);
+}

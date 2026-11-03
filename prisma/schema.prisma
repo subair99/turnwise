@@ -11,7 +11,10 @@ model Circle {
   id          String    @id @default(cuid())
   name        String
   currency    String    @default("USD")
-  status      String    @default("active") // active | complete
+  status      String    @default("active") // active | complete | attention | redteam
+  mode        String    @default("live") // live | simulated (judge-mode history, no PayPal objects)
+  secondsPerDay Float?  // per-circle demo clock: real seconds per circle day (null = real time)
+  clockStartedAt DateTime?
   createdAt   DateTime  @default(now())
   charters    Charter[]
   members     Member[]
@@ -46,6 +49,7 @@ model Member {
   collectedCycle Int?
   depositCents   Int       @default(0)
   simulateMissCycle Int?   // demo only: skip this member's pre-authorization in this cycle
+  city           String?
   mandates       Mandate[]
   bids           Bid[]
   preauths       PreAuthorization[]
@@ -74,6 +78,7 @@ model Cycle {
   state         String   // pending | collecting | auction | settling | closed
   winnerId      String?
   discountCents Int?
+  auctionOpenedAt DateTime?
   bids          Bid[]
 
   @@unique([circleId, number])

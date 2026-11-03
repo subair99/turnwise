@@ -1,9 +1,3 @@
-export default async function CharterPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  return (
-    <section>
-      <h1>Charter</h1>
-      <p>Circle {id}. TODO: build the charter screen.</p>
-    </section>
-  );
+export default function CharterPage() {
+  return <p className="meta">This screen arrives in Stage 6b.</p>;
 }

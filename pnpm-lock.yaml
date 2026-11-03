@@ -178,6 +178,9 @@ importers:
       '@prisma/client':
         specifier: ^6.19.3
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      ag-charts-community:
+        specifier: ^14.2.0
+        version: 14.2.0
       ag-grid-community:
         specifier: ^36.2.0
         version: 36.2.0
@@ -190,6 +193,9 @@ importers:
       ai:
         specifier: ^4.3.19
         version: 4.3.19(react@19.3.1)(zod@3.25.76)
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       next:
         specifier: ^15.5.28
         version: 15.5.28(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -4175,7 +4181,7 @@ snapshots:
     dependencies:
       '@hono/node-server': 2.1.5(hono@4.13.14)
       ajv: 8.20.0
-      ajv-formats: 3.0.1
+      ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
       cors: 2.8.6
       cross-spawn: 7.0.6
@@ -4677,12 +4683,10 @@ snapshots:
       ag-charts-core: 14.2.0
       ag-charts-locale: 14.2.0
       ag-charts-types: 14.2.0
-    optional: true
 
   ag-charts-core@14.2.0:
     dependencies:
       ag-charts-types: 14.2.0
-    optional: true
 
   ag-charts-enterprise@14.2.0:
     dependencies:
@@ -4690,8 +4694,7 @@ snapshots:
       ag-charts-core: 14.2.0
     optional: true
 
-  ag-charts-locale@14.2.0:
-    optional: true
+  ag-charts-locale@14.2.0: {}
 
   ag-charts-types@14.2.0: {}
 
@@ -4741,12 +4744,12 @@ snapshots:
     optionalDependencies:
       react: 19.3.1
 
-  ajv-formats@2.1.1:
-    dependencies:
+  ajv-formats@2.1.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
 
-  ajv-formats@3.0.1:
-    dependencies:
+  ajv-formats@3.0.1(ajv@8.20.0):
+    optionalDependencies:
       ajv: 8.20.0
 
   ajv@6.15.0:
@@ -5009,7 +5012,7 @@ snapshots:
   conf@10.2.0:
     dependencies:
       ajv: 8.20.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1(ajv@8.20.0)
       atomically: 1.7.0
       debounce-fn: 4.0.0
       dot-prop: 6.0.1
