@@ -31,12 +31,12 @@ export function CircleLedger({ rows }: { rows: LedgerRow[] }) {
       { field: "direction", headerName: "Money", enableRowGroup: true, width: 110 },
       { field: "amount", headerName: "Amount", type: "rightAligned", valueFormatter: (p) => usd(p.value), enableValue: true, defaultAggFunc: "sum", allowedAggFuncs: ["sum", "count", "avg", "min", "max"], filter: "agNumberColumnFilter", width: 130 },
       { field: "timing", headerName: "Timing", enableRowGroup: true, cellStyle: (p) => (p.value === "Late" || String(p.value).startsWith("Missed") ? { color: "#a63d25", fontWeight: 700 } : null) },
-      { field: "status", headerName: "Status", cellStyle: (p) => (String(p.value).startsWith("Failed") ? { color: "#a63d25", fontWeight: 700 } : String(p.value).startsWith("Confirmed") ? ({ color: "#2e6b47" } as CellStyle) : null) },
-      { field: "method", headerName: "Method", enableRowGroup: true, hide: true },
-      { field: "agent", headerName: "Agent", enableRowGroup: true },
-      { field: "paypalId", headerName: "PayPal ID" },
-      { field: "rule", headerName: "Rule", hide: true },
-      { field: "model", headerName: "Model", hide: true },
+      { field: "status", headerName: "Status", filter: false, cellStyle: (p) => (String(p.value).startsWith("Failed") ? { color: "#a63d25", fontWeight: 700 } : String(p.value).startsWith("Confirmed") ? ({ color: "#2e6b47" } as CellStyle) : null) },
+      { field: "method", headerName: "Method", enableRowGroup: true, hide: true, filter: false },
+      { field: "agent", headerName: "Agent", enableRowGroup: true, filter: false },
+      { field: "paypalId", headerName: "PayPal ID", filter: false },
+      { field: "rule", headerName: "Rule", hide: true, filter: false },
+      { field: "model", headerName: "Model", hide: true, filter: false },
     ],
     [],
   );
@@ -68,7 +68,11 @@ export function CircleLedger({ rows }: { rows: LedgerRow[] }) {
         const data = (await res.json()) as { gridState?: GridState | null; propertiesToIgnore?: string[]; explanation?: string };
         if (data.gridState) {
           api.setState(data.gridState, (data.propertiesToIgnore ?? []) as NonNullable<Parameters<GridApi<LedgerRow>["setState"]>[1]>);
-          setAnswer({ text: data.explanation ?? "Done." });
+          const explanation = data.explanation ?? "Done.";
+          setAnswer({ text: explanation });
+          setTimeout(() => {
+            if (api.getDisplayedRowCount() === 0) setAnswer({ text: `${explanation} No rows match this view, so the question may have been read too narrowly. Rephrase it or press Reset view.`, error: true });
+          }, 50);
         } else {
           setAnswer({ text: data.explanation ?? "That question couldn't be turned into a view of the ledger.", error: true });
         }

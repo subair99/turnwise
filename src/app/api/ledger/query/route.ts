@@ -19,6 +19,7 @@ Reply with ONE JSON object and nothing else (no code fences, no commentary), sha
 - propertiesToIgnore lists every part you did not change, from: ${PROPS.join(", ")}.
 - explanation is one plain sentence saying what the view now shows. You cannot see the data, so don't state numbers.
 Hints: late payments are rows where timing is "Late"; missed payments have timing starting with "Missed".
+Filter late or missed payments on the timing column only; never also filter status or type for them.
 To answer "who did X N times", filter to X and group rows by member so each group shows its count.
 To total money per member, group by member and sum amount. Use only columns and values that appear in the schema.`;
 
