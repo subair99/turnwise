@@ -34,6 +34,15 @@ export async function tickCircle(db: PrismaClient, circleId: string, at: Date, l
   }
   // Circles from the Stage 2-3 scripts have no default steps or lead days; leave them alone.
   if (!body.defaultSteps || !body.preauthLeadDays) return "legacy";
+  // Demo clocks pause while nothing runs them: after a gap (worker down, or not started yet) the clock resumes
+  // where it stopped instead of jumping ahead.
+  if (circle.secondsPerDay && circle.clockStartedAt) {
+    const nowMs = Date.now();
+    const gap = nowMs - (circle.lastTickAt ?? circle.clockStartedAt).getTime();
+    const resumed = gap > 15_000 ? new Date(circle.clockStartedAt.getTime() + gap) : circle.clockStartedAt;
+    await db.circle.update({ where: { id: circleId }, data: { lastTickAt: new Date(nowMs), clockStartedAt: resumed } });
+    circle.clockStartedAt = resumed;
+  }
   at = circleNow(circle, at);
 
   await confirmPayouts(db, circleId, log);

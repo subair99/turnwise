@@ -15,6 +15,7 @@ model Circle {
   mode        String    @default("live") // live | simulated (judge-mode history, no PayPal objects)
   secondsPerDay Float?  // per-circle demo clock: real seconds per circle day (null = real time)
   clockStartedAt DateTime?
+  lastTickAt  DateTime? // demo clocks pause while no worker is running
   createdAt   DateTime  @default(now())
   charters    Charter[]
   members     Member[]
