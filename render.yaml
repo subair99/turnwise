@@ -27,8 +27,8 @@ services:
     name: turnwise-worker
     runtime: node
     plan: starter
-    buildCommand: corepack pnpm install --frozen-lockfile
-    startCommand: corepack pnpm worker
+    buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm prisma generate
+    startCommand: corepack pnpm prisma generate && corepack pnpm worker
     envVars:
       - key: DATABASE_URL
         fromDatabase: { name: turnwise-db, property: connectionString }
