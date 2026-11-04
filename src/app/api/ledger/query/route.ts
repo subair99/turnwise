@@ -125,7 +125,11 @@ export async function POST(req: Request) {
     // Validated as sent; now drop "no filter" entries so only real filters are applied.
     const fm = (out.gridState as { filter?: { filterModel?: Record<string, unknown> } }).filter?.filterModel;
     if (fm) for (const k of Object.keys(fm)) if (fm[k] === null) delete fm[k];
-    return NextResponse.json({ gridState: out.gridState, propertiesToIgnore: out.propertiesToIgnore, explanation: typeof out.explanation === "string" ? out.explanation : "Done." });
+    // Apply every part the model returned; ignore only the parts it left out (its own list can contradict its state).
+    const state = out.gridState as Record<string, unknown>;
+    for (const k of Object.keys(state)) if (state[k] === null) delete state[k];
+    const ignore = PROPS.filter((p) => !(p in state));
+    return NextResponse.json({ gridState: state, propertiesToIgnore: ignore, explanation: typeof out.explanation === "string" ? out.explanation : "Done." });
   } catch (err) {
     console.error("[ledger query]", (err as Error).message, raw ? `| reply started: ${raw.slice(0, 200)}` : "");
     return NextResponse.json({ gridState: null, explanation: "The ledger assistant couldn't answer that. Try rephrasing, or filter the columns directly.", detail: (err as Error).message.slice(0, 300) }, { status: 502 });
