@@ -354,7 +354,7 @@ export async function auctionRows(db: PrismaClient, id: string) {
 
 export async function circleList(db: PrismaClient) {
   const circles = await db.circle.findMany({
-    where: { status: { not: "redteam" }, charters: { some: { frozen: true } } },
+    where: { status: { notIn: ["redteam", "archived"] }, charters: { some: { frozen: true } } },
     orderBy: { createdAt: "desc" },
     take: 12,
     include: { _count: { select: { members: true } } },

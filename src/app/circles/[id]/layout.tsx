@@ -24,6 +24,7 @@ export default async function CircleLayout({ children, params }: { children: Rea
           {h.secondsPerDay ? <span className="flag">Demo time, accelerated: one day every {h.secondsPerDay} s</span> : null}
           {h.status === "complete" ? <span className="flag">Finished</span> : null}
           {h.status === "attention" ? <span className="flag attention">Needs attention: a payout failed</span> : null}
+          {h.status === "archived" ? <span className="flag">Archived test run</span> : null}
           {h.frozen ? <span className="flag" title={h.charterHash}>Charter frozen {h.charterHash.slice(7, 15)}</span> : null}
         </div>
       </header>
