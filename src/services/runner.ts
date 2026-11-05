@@ -4,7 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 import { circleNow, demoSecondsPerDay } from "@/domain/clock";
 import { loadCircle } from "./gate-context";
 import { openCycle } from "./cycles";
-import { runCaptures, runDefaultSteps, runPreauthWindow } from "./guardian-jobs";
+import { platformErrors, runCaptures, runDefaultSteps, runPreauthWindow } from "./guardian-jobs";
 import { closeAuction, collectAgentBids } from "./auction";
 import { refundDeposit } from "./settlement";
 import { confirmPayouts, payoutOwedAccount } from "./payout-watch";
@@ -36,10 +36,12 @@ export async function tickCircle(db: PrismaClient, circleId: string, at: Date, l
   if (!body.defaultSteps || !body.preauthLeadDays) return "legacy";
   // Demo clocks pause while nothing runs them: after a gap (worker down, or not started yet) the clock resumes
   // where it stopped instead of jumping ahead.
+  let tickGapMs = 0;
   if (circle.secondsPerDay && circle.clockStartedAt) {
     const nowMs = Date.now();
     const gap = nowMs - (circle.lastTickAt ?? circle.clockStartedAt).getTime();
     const resumed = gap > 15_000 ? new Date(circle.clockStartedAt.getTime() + gap) : circle.clockStartedAt;
+    tickGapMs = gap > 15_000 ? 0 : gap;
     await db.circle.update({ where: { id: circleId }, data: { lastTickAt: new Date(nowMs), clockStartedAt: resumed } });
     circle.clockStartedAt = resumed;
   }
@@ -74,8 +76,19 @@ export async function tickCircle(db: PrismaClient, circleId: string, at: Date, l
       return "opened";
 
     case "collecting": {
+      platformErrors.delete(circleId);
       await runPreauthWindow(db, circleId, open, body, at, log);
       await runCaptures(db, circleId, open, at, log);
+      if (platformErrors.has(circleId)) {
+        // PayPal unreachable, or our credentials rejected: pause the circle; never count it against members.
+        if (circle.secondsPerDay && circle.clockStartedAt && tickGapMs > 0) {
+          await db.circle.update({ where: { id: circleId }, data: { clockStartedAt: new Date(circle.clockStartedAt.getTime() + tickGapMs) } });
+        }
+        const already = await db.notice.findFirst({ where: { circleId, cycleNumber: open.number, kind: "paused" } });
+        if (!already) await notice(db, { circleId, cycleNumber: open.number, kind: "paused", text: "Turnwise couldn't reach PayPal, so the circle is paused. Nobody is marked late while it is." });
+        log(`cycle ${open.number}: PayPal unavailable; circle paused`);
+        return "paypal_unavailable";
+      }
       await runDefaultSteps(db, circleId, open, body, at, log);
       const contribs = await db.contribution.findMany({ where: { circleId, cycleNumber: open.number } });
       if (contribs.some((c) => c.status === "shortfall")) return "waiting"; // member vote needed

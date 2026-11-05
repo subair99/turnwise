@@ -12,6 +12,14 @@ import { captureDue, preauthorize } from "./preauth";
 import { notice } from "./notices";
 
 type Log = (m: string) => void;
+
+// A failure on PayPal's side (or ours: bad credentials, network) is not a member missing a payment.
+export const platformErrors = new Set<string>();
+export function isPlatformError(err: unknown): boolean {
+  const msg = (err as Error)?.message ?? "";
+  const status = (err as { status?: number })?.status;
+  return /OAuth failed|invalid_client|fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up/i.test(msg) || (typeof status === "number" && status >= 500);
+}
 const RESOLVED = new Set(["paid", "covered"]);
 
 // 5 days (charter) before the due date: authorize each contribution from the member's saved wallet.
@@ -33,6 +41,7 @@ export async function runPreauthWindow(db: PrismaClient, circleId: string, cycle
       const pre = await preauthorize(db, circleId, m.id, cycle.number);
       log(`${m.displayName}: authorized ${pre.authorizationId ?? "(needs one-tap approval)"}`);
     } catch (err) {
+      if (isPlatformError(err)) platformErrors.add(circleId);
       log(`${m.displayName}: pre-authorization failed: ${(err as Error).message}`);
     }
   }
@@ -49,6 +58,7 @@ export async function runCaptures(db: PrismaClient, circleId: string, cycle: Cyc
       const paid = await captureDue(db, circleId, p.memberId, cycle.number);
       log(`${name}: captured ${paid.captureId}`);
     } catch (err) {
+      if (isPlatformError(err)) platformErrors.add(circleId);
       log(`${name}: capture failed: ${(err as Error).message}`);
     }
   }
