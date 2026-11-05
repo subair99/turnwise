@@ -9,7 +9,7 @@ decides every money move.**
 
 > Independent hackathon project for the PayPal AI Hackathon. PayPal sandbox only. Not affiliated with or endorsed by PayPal.
 
-- **Video (under 3 minutes):** TODO YouTube link
+- **Video (under 3 minutes):** [![Watch it here](images/CrabEyes-thumbnail.png)](https://youtu.be/LzxBUc1TDOc)
 - **Hosted demo:** https://turnwise-web.onrender.com — open **Judge mode** (running until 15 Dec 2026)
 - **For judges:** [JUDGES.md](JUDGES.md) — a two-minute walkthrough and how to run it yourself
 - **Eval results:** [evals/RESULTS.md](evals/RESULTS.md) — real numbers, misses included
