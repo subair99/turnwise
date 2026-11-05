@@ -20,6 +20,12 @@ const PEOPLE: [string, string][] = [
   ["Efe", "London"], ["Funke", "Houston"], ["Gbenga", "Lagos"], ["Halima", "London"],
 ];
 
+// Live sandbox circles use US sandbox accounts (US accounts can receive PayPal payouts), so they get US cities.
+const LIVE_PEOPLE: [string, string][] = [
+  ["Ada", "Houston"], ["Bola", "Atlanta"], ["Chidi", "New York"], ["Dami", "Dallas"],
+  ["Efe", "Chicago"], ["Funke", "Washington, DC"], ["Gbenga", "Los Angeles"], ["Halima", "Seattle"],
+];
+
 export async function seedSimulatedCircle(db: PrismaClient): Promise<string> {
   const contribution = 10_000;
   const body: CharterBody = {
@@ -187,7 +193,7 @@ export async function startLiveCircle(db: PrismaClient): Promise<string> {
   const secondsPerDay = demoSecondsPerDay() || 0.7;
   const { circle, charter, members } = await createCircle(
     db,
-    { name: "Live sandbox circle", body, members: ready.map((r, i) => ({ displayName: PEOPLE[i]![0], city: PEOPLE[i]![1], email: r.email, vaultId: r.vaultId })) },
+    { name: "Live sandbox circle", body, members: ready.map((r, i) => ({ displayName: LIVE_PEOPLE[i]![0], city: LIVE_PEOPLE[i]![1], email: r.email, vaultId: r.vaultId })) },
     { mode: "live", clock: { secondsPerDay, startedAt: new Date() } },
   );
   for (const m of members) await approveCharter(db, charter.id, m.id);
