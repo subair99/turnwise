@@ -54,3 +54,17 @@ export async function payoutBatchOutcome(id: string): Promise<{ batchStatus: str
   });
   return { batchStatus: b.batch_header?.batch_status ?? "UNKNOWN", items };
 }
+
+// Webhook diagnostics (read-only): which webhooks this app has, and which events PayPal generated for it.
+export async function webhookDiagnostics(sinceDays = 3) {
+  const { paypalFetch } = await import("../paypal/client");
+  const hooks = await paypalFetch<{ webhooks?: { id: string; url: string; event_types?: { name: string }[] }[] }>("/v1/notifications/webhooks");
+  const start = new Date(Date.now() - sinceDays * 86_400_000).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const events = await paypalFetch<{ events?: { id: string; event_type: string; create_time: string }[] }>(
+    `/v1/notifications/webhooks-events?page_size=20&start_time=${encodeURIComponent(start)}`,
+  );
+  return {
+    webhooks: (hooks.webhooks ?? []).map((w) => ({ id: w.id, url: w.url, events: (w.event_types ?? []).map((e) => e.name) })),
+    events: events.events ?? [],
+  };
+}

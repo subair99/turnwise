@@ -29,10 +29,11 @@
     "demo:circle": "tsx --env-file=.env scripts/demo-circle.ts",
     "reconcile": "tsx --env-file=.env scripts/reconcile.ts",
     "mcp:token": "tsx --env-file=.env scripts/mcp-token.ts",
-    "payout:status": "tsx --env-file=.env scripts/payout-status.ts",
+    "payout:status": "tsx --env-file-if-exists=.env scripts/payout-status.ts",
     "vaults:export": "tsx --env-file=.env scripts/vaults-export.ts",
     "mcp:smoke": "tsx --env-file-if-exists=.env scripts/mcp-smoke.ts",
-    "circles:tidy": "tsx --env-file-if-exists=.env scripts/circles-tidy.ts"
+    "circles:tidy": "tsx --env-file-if-exists=.env scripts/circles-tidy.ts",
+    "webhooks:check": "tsx --env-file-if-exists=.env scripts/webhooks-check.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.24",
